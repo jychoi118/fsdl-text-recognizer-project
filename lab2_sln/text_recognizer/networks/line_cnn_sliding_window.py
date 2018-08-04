@@ -69,4 +69,3 @@ def line_cnn_sliding_window(
     model = KerasModel(inputs=image_input, outputs=softmax_output)
     model.summary()
     return model
-
