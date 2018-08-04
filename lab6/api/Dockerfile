@@ -13,6 +13,7 @@ COPY . .
 ENV LC_ALL C.UTF-8
 ENV LANG C.UTF-8
 RUN set -ex && pipenv install --keep-outdated --deploy --system
+#RUN set -ex && pipenv install --keep-outdated --deploy
 
 # Run the web server
 EXPOSE 8000
