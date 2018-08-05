@@ -2,7 +2,7 @@ from boltons.cacheutils import cachedproperty
 import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.python.client import device_lib
-from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D, Permute, RepeatVector, Reshape, TimeDistributed, Lambda, LSTM, GRU, CuDNNLSTM, Bidirectional
+from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D, Permute, RepeatVector, Reshape, TimeDistributed, Lambda, LSTM, GRU, CuDNNLSTM, Bidirectional, Dropout, BatchNormalization
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.models import Model as KerasModel
 
@@ -12,7 +12,7 @@ from text_recognizer.networks.misc import slide_window
 from text_recognizer.networks.ctc import ctc_decode
 
 
-def line_lstm_ctc(input_shape, output_shape, window_width=28, window_stride=14):
+def line_lstm_ctc(input_shape, output_shape, window_width=28, window_stride=14, conv_dim=128, lstm_dim=128):
     image_height, image_width = input_shape
     output_length, num_classes = output_shape
 
@@ -49,11 +49,15 @@ def line_lstm_ctc(input_shape, output_shape, window_width=28, window_stride=14):
     convnet = KerasModel(inputs=convnet.inputs, outputs=convnet.layers[-2].output)
     convnet_outputs = TimeDistributed(convnet)(image_patches)
     # (num_windows, 128)
-
-    lstm_output = lstm_fn(128, return_sequences=True)(convnet_outputs)
+    #convnet_outputs_bn = BatchNormalization()(convnet_outputs)
+    
+    lstm_output = Bidirectional(lstm_fn(128, return_sequences=True))(convnet_outputs)
+    lstm_output_drop = Dropout(0.5)(lstm_output)
+    lstm_output2 = Bidirectional(lstm_fn(128, return_sequences=True))(lstm_output_drop)
+    lstm_output_drop2 = Dropout(0.5)(lstm_output2)
     # (num_windows, 128)
-
-    softmax_output = Dense(num_classes, activation='softmax', name='softmax_output')(lstm_output)
+    
+    softmax_output = Dense(num_classes, activation='softmax', name='softmax_output')(lstm_output_drop2)
     # (num_windows, num_classes)
     ##### Your code above (Lab 3)
 
